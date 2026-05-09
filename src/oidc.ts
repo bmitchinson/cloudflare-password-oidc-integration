@@ -80,7 +80,7 @@ export function createOidcServer({ config, signing, logger }: OidcServerOptions)
       id_token_signing_alg_values_supported: ["RS256"],
       token_endpoint_auth_methods_supported: ["client_secret_basic", "client_secret_post", "none"],
       scopes_supported: ["openid", "email", "profile"],
-      claims_supported: ["sub", "iss", "aud", "exp", "iat", "email", "site", "grants"],
+      claims_supported: ["sub", "iss", "aud", "exp", "iat", "email", "grants"],
     };
   }
 
@@ -111,13 +111,6 @@ export function createOidcServer({ config, signing, logger }: OidcServerOptions)
       return redirectWithError(redirectUri, params.get("state"), "invalid_scope");
     }
 
-    const siteId = params.get("site") ?? "";
-    const site = findSite(siteId);
-    if (!site) {
-      logger.warn("unknown_site", { clientId, siteId });
-      return textResponse("Unknown site. Add ?site=<site id> to the authorization URL.", 400);
-    }
-
     const requestId = randomId();
     pendingLogins.set(requestId, {
       expiresAt: Date.now() + authRequestTtlMs,
@@ -128,11 +121,10 @@ export function createOidcServer({ config, signing, logger }: OidcServerOptions)
         scope,
         state: params.get("state"),
         nonce: params.get("nonce"),
-        siteId: site.id,
       },
     });
 
-    return htmlResponse(loginPage(requestId, site));
+    return htmlResponse(loginPage(requestId));
   }
 
   async function login(request: Request): Promise<Response> {
@@ -147,24 +139,20 @@ export function createOidcServer({ config, signing, logger }: OidcServerOptions)
       return textResponse("Login request expired", 400);
     }
 
-    const site = findSite(pending.request.siteId);
-    if (!site) {
-      logger.warn("login_site_missing", { siteId: pending.request.siteId });
-      return textResponse("Site no longer exists", 400);
-    }
-
-    if (!site.passwords.includes(password)) {
-      logger.warn("incorrect_password", { siteId: site.id });
-      return htmlResponse(loginPage(requestId, site, "Incorrect password"), 401);
+    const credential = findCredential(password);
+    if (!credential) {
+      logger.warn("incorrect_password");
+      return htmlResponse(loginPage(requestId, "Incorrect password"), 401);
     }
 
     pendingLogins.delete(requestId);
     const code = randomId();
     authCodes.set(code, {
       request: pending.request,
-      subject: `site:${site.id}`,
-      email: `${site.id}@password.local`,
-      grants: site.grants,
+      subject: `password:${credential.id}`,
+      email: `${credential.id}@password.local`,
+      grants: credential.grants,
+      credentialId: credential.id,
       issuedAt: Date.now(),
       expiresAt: Date.now() + authCodeTtlMs,
     });
@@ -224,8 +212,7 @@ export function createOidcServer({ config, signing, logger }: OidcServerOptions)
         nonce: authCode.request.nonce ?? undefined,
         email: authCode.email,
         email_verified: true,
-        name: findSite(authCode.request.siteId)?.name ?? authCode.request.siteId,
-        site: authCode.request.siteId,
+        name: authCode.credentialId,
         grants: authCode.grants,
       },
       signing,
@@ -239,7 +226,6 @@ export function createOidcServer({ config, signing, logger }: OidcServerOptions)
         exp: nowSeconds + idTokenTtlSeconds,
         iat: nowSeconds,
         scope: authCode.request.scope,
-        site: authCode.request.siteId,
         grants: authCode.grants,
       },
       signing,
@@ -248,7 +234,7 @@ export function createOidcServer({ config, signing, logger }: OidcServerOptions)
     logger.info("token_issued", {
       clientId: client.id,
       subject: authCode.subject,
-      siteId: authCode.request.siteId,
+      credentialId: authCode.credentialId,
       grants: authCode.grants,
     });
 
@@ -292,8 +278,19 @@ export function createOidcServer({ config, signing, logger }: OidcServerOptions)
     return config.clients.find((client) => client.id === id);
   }
 
-  function findSite(id: string) {
-    return config.sites.find((site) => site.id === id);
+  function findCredential(password: string) {
+    let index = 0;
+    for (const [candidate, grants] of Object.entries(config.passwords)) {
+      if (candidate === password) {
+        return {
+          id: `credential-${index + 1}`,
+          grants,
+        };
+      }
+      index += 1;
+    }
+
+    return null;
   }
 
   function redirectWithError(redirectUri: string, state: string | null, error: string) {

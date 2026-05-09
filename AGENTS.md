@@ -2,9 +2,9 @@
 
 ## Application
 
-This repository contains a small Bun-based OpenID Connect provider intended for Cloudflare Access. Cloudflare redirects users here during Generic OIDC login. The app detects the requested site from the OIDC request, shows a plain HTML password form with that site name, and issues signed RS256 OIDC tokens when the submitted shared password matches the configured site.
+This repository contains a small Bun-based OpenID Connect provider intended for Cloudflare Access. Cloudflare redirects users here during Generic OIDC login. The app shows a plain HTML password form and issues signed RS256 OIDC tokens with the grants mapped to the submitted shared password.
 
-The goal is not full user identity management. The goal is a lightweight "permanent shared password per protected site" flow so casual users can reach Cloudflare Tunnel-backed services without entering an email address for Cloudflare OTP.
+The goal is not full user identity management. The goal is a lightweight "shared password grants access" flow so casual users can reach Cloudflare Tunnel-backed services without entering an email address for Cloudflare OTP.
 
 ## Intended Ask
 
@@ -12,7 +12,7 @@ Build and maintain a minimal OIDC implementation that:
 
 - runs with Bun,
 - deploys cleanly using the Fly.io-generated Bun Dockerfile,
-- reads runtime client config, client secrets, site definitions, and site passwords from `/data/config.json`,
+- reads runtime client config, client secrets, and password-to-grants mappings from `/data/config.json`,
 - supports one deployment for development and production,
 - keeps HTML intentionally plain until a later design pass,
 - emits a `grants` claim Cloudflare Access can use in OIDC Claim policies,

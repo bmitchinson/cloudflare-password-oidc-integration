@@ -1,25 +1,16 @@
 {
-  "issuer": "https://cloudflare-otp-for-sites.fly.dev",
+  "issuer": "https://cloudflare-password-oidc-integration.fly.dev",
   "keyPath": "/data/oidc-private-key.pem",
   "clients": [
     {
       "id": "cloudflare-access-shared-passwords",
-      "secret": "replace-me-client-secret",
+      "secret": "cloud-flare-secret-here",
       "redirectUris": [
-        "https://your-team-name.cloudflareaccess.com/cdn-cgi/access/callback"
+        "https://mitchinson.cloudflareaccess.com/cdn-cgi/access/callback"
       ]
     }
   ],
-  "sites": [
-    {
-      "id": "photos",
-      "name": "Photos",
-      "passwords": [
-        "replace-me-photos-password"
-      ],
-      "grants": [
-        "photos"
-      ]
-    }
-  ]
+  "passwords": {
+    "password1234": ["day"]
+  }
 }

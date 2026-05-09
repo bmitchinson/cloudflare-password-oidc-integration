@@ -1,6 +1,6 @@
-# cloudflare-otp-for-sites
+# cloudflare-password-oidc-integration
 
-A tiny Bun OpenID Connect provider for Cloudflare Access. It lets a user reach a protected site by entering a site-specific shared password, then emits OIDC claims Cloudflare can use in Access policies.
+A tiny Bun OpenID Connect provider for Cloudflare Access. A user enters a shared password, and that password maps to one or more grants Cloudflare can use in Access policies.
 
 This is intentionally boring HTML. There is no CSS yet.
 
@@ -22,33 +22,9 @@ The first production run creates `/data/oidc-private-key.pem` on the Fly volume.
 
 `CONFIG_PATH` defaults to `./config.json`. On Fly.io, `fly.toml` sets `CONFIG_PATH=/data/config.json` so the runtime config lives on the mounted volume.
 
-```json
-{
-  "issuer": "https://your-provider.fly.dev",
-  "keyPath": "/data/oidc-private-key.pem",
-  "clients": [
-    {
-      "id": "cloudflare-access-shared-passwords",
-      "secret": "replace-me-client-secret",
-      "redirectUris": [
-        "https://your-team-name.cloudflareaccess.com/cdn-cgi/access/callback"
-      ]
-    }
-  ],
-  "sites": [
-    {
-      "id": "photos",
-      "name": "Photos",
-      "passwords": ["replace-me-photos-password"],
-      "grants": ["photos"]
-    }
-  ]
-}
-```
+See `data-examples/config.example.json` for examples.
 
-For site detection, configure Cloudflare's OIDC Auth URL with `?site=photos`.
-
-The login page displays the detected site name and asks only for the password.
+The login page asks only for the password. The password determines the emitted `grants` claim.
 
 ## Cloudflare setup
 
@@ -78,12 +54,12 @@ bun index.ts
 
 For the current deployment, Fly sets `CONFIG_PATH=/data/config.json`. The app does not create or copy that file. Create it manually from `data-examples/config.example.json`, then edit it on the volume.
 
-The Docker image ignores `.env`. Put production client secrets and site passwords directly in `/data/config.json` so you can change them without rebuilding.
+The Docker image ignores `.env`. Put production client secrets and shared passwords directly in `/data/config.json` so you can change them without rebuilding.
 
 Current deployment:
 
-- app: `cloudflare-otp-for-sites`
-- public URL: `https://cloudflare-otp-for-sites.fly.dev`
+- app: `cloudflare-password-oidc-integration`
+- public URL: `https://cloudflare-password-oidc-integration.fly.dev`
 - region: `sjc`
 - volume: `oidc_data`
 - mount path: `/data`
@@ -94,7 +70,7 @@ To launch the same shape from scratch:
 
 ```bash
 flyctl launch \
-  --name cloudflare-otp-for-sites \
+  --name cloudflare-password-oidc-integration \
   --region sjc \
   --primary-region sjc \
   --internal-port 3000 \
@@ -106,7 +82,7 @@ flyctl launch \
   --no-deploy
 
 flyctl volumes create oidc_data \
-  --app cloudflare-otp-for-sites \
+  --app cloudflare-password-oidc-integration \
   --region sjc \
   --size 1 \
   --yes
@@ -126,44 +102,41 @@ Then make sure `fly.toml` contains:
 Deploy updates:
 
 ```bash
-flyctl deploy --app cloudflare-otp-for-sites
+flyctl deploy --app cloudflare-password-oidc-integration
 ```
 
 ## Password setup
 
 Passwords live directly in `/data/config.json`.
 
-Example site in `config.json`:
+Example password grants in `config.json`:
 
 ```json
-{
-  "id": "photos",
-  "name": "Photos",
-  "passwords": ["shared-password-for-photos"],
-  "grants": ["photos"]
+"passwords": {
+  "shared-password-for-photos": ["photos"],
+  "shared-password-for-admin": ["photos", "files", "admin"]
 }
 ```
 
 To edit config on the Fly volume:
 
 ```bash
-flyctl ssh console --app cloudflare-otp-for-sites
+flyctl ssh console --app cloudflare-password-oidc-integration
 cd /data
 cp config.json config.json.bak
 vi config.json
 exit
-flyctl machine restart 148e0e32fe2908 --app cloudflare-otp-for-sites
+flyctl machine restart 148e0e32fe2908 --app cloudflare-password-oidc-integration
 ```
 
 The app reads config on startup, so restart the machine after editing `/data/config.json`.
 
-To add a new protected site without rebuilding:
+To add or change password grants without rebuilding:
 
 1. SSH into the Fly machine.
 2. Edit `/data/config.json`.
-3. Add a new site entry with a plaintext password, for example `passwords: ["new-password"]`, and `grants: ["calendar"]`.
-4. Add or update the Cloudflare OIDC Auth URL so it uses `?site=calendar`.
-5. Restart the Fly machine.
+3. Add or edit an entry under `passwords`, for example `"new-password": ["calendar"]`.
+4. Restart the Fly machine.
 
 To rotate a password without rebuilding, change the value in `/data/config.json` and restart the Fly machine. Existing Cloudflare Access sessions can remain valid until their Access session expires unless you revoke them in Cloudflare.
 
@@ -181,8 +154,8 @@ The signing key signs ID tokens and backs `/jwks.json`.
 Useful commands:
 
 ```bash
-flyctl volumes list --app cloudflare-otp-for-sites
-flyctl ssh console --app cloudflare-otp-for-sites
+flyctl volumes list --app cloudflare-password-oidc-integration
+flyctl ssh console --app cloudflare-password-oidc-integration
 ls -la /data
 ```
 

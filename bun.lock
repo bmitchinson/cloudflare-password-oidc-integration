@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "cloudflare-otp-for-sites",
+      "name": "cloudflare-password-oidc-integration",
       "devDependencies": {
         "@types/bun": "latest",
       },

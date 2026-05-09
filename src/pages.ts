@@ -1,4 +1,4 @@
-import type { AppConfig, SiteConfig } from "./types";
+import type { AppConfig } from "./types";
 
 export function homePage(config: AppConfig) {
   return htmlDocument(`
@@ -8,10 +8,10 @@ export function homePage(config: AppConfig) {
   `);
 }
 
-export function loginPage(requestId: string, site: SiteConfig, error?: string) {
+export function loginPage(requestId: string, error?: string) {
   return htmlDocument(`
-    <h1>${escapeHtml(site.name)}</h1>
-    <p>Enter the password for ${escapeHtml(site.name)}.</p>
+    <h1>Password required</h1>
+    <p>Enter the shared access password.</p>
     ${error ? `<p>${escapeHtml(error)}</p>` : ""}
     <form method="post" action="/login">
       <input type="hidden" name="request_id" value="${escapeHtml(requestId)}">

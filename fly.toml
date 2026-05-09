@@ -1,9 +1,9 @@
-# fly.toml app configuration file generated for cloudflare-otp-for-sites on 2026-05-08T21:54:48-07:00
+# fly.toml app configuration file generated for cloudflare-password-oidc-integration on 2026-05-08T21:54:48-07:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'cloudflare-otp-for-sites'
+app = 'cloudflare-password-oidc-integration'
 primary_region = 'sjc'
 
 [build]

@@ -5,13 +5,13 @@ This app is a Generic OIDC identity provider for Cloudflare Access.
 Provider URL:
 
 ```text
-https://cloudflare-otp-for-sites.fly.dev
+https://cloudflare-password-oidc-integration.fly.dev
 ```
 
-Use one Cloudflare OIDC provider for all protected sites. The site is selected by the authorization URL:
+Use one Cloudflare OIDC provider for all protected sites. Passwords decide which grants a user receives.
 
 ```text
-https://cloudflare-otp-for-sites.fly.dev/authorize?site=photos
+https://cloudflare-password-oidc-integration.fly.dev/authorize
 ```
 
 ## 1. Configure `/data/config.json`
@@ -28,21 +28,19 @@ Use one shared OIDC client:
 }
 ```
 
-Add one site entry per protected app:
+Add passwords with the grants they receive:
 
 ```json
-{
-  "id": "photos",
-  "name": "Photos",
-  "passwords": ["shared-password-users-enter"],
-  "grants": ["photos"]
+"passwords": {
+  "shared-password-users-enter": ["photos"],
+  "admin-password-users-enter": ["photos", "files", "admin"]
 }
 ```
 
 Restart after editing:
 
 ```bash
-flyctl machine restart 148e0e32fe2908 --app cloudflare-otp-for-sites
+flyctl machine restart 148e0e32fe2908 --app cloudflare-password-oidc-integration
 ```
 
 ## 2. Add The OIDC Provider
@@ -66,13 +64,13 @@ Client Secret:
 make-a-random-client-secret
 
 Auth URL:
-https://cloudflare-otp-for-sites.fly.dev/authorize?site=photos
+https://cloudflare-password-oidc-integration.fly.dev/authorize
 
 Token URL:
-https://cloudflare-otp-for-sites.fly.dev/token
+https://cloudflare-password-oidc-integration.fly.dev/token
 
 Certificate URL / JWKS URL:
-https://cloudflare-otp-for-sites.fly.dev/jwks.json
+https://cloudflare-password-oidc-integration.fly.dev/jwks.json
 ```
 
 If Cloudflare shows a PKCE option, leave it disabled. This app does not implement PKCE.
@@ -80,7 +78,6 @@ If Cloudflare shows a PKCE option, leave it disabled. This app does not implemen
 If Cloudflare lets you list custom OIDC claims, add:
 
 ```text
-site
 grants
 ```
 
@@ -122,19 +119,7 @@ You can leave One-time PIN enabled while testing. Remove it later if you only wa
 
 ## 5. Add The Access Policy
 
-For the protected app, add or update an Allow policy requiring the site claim.
-
-Use either:
-
-```text
-Claim name:
-site
-
-Claim value:
-photos
-```
-
-Or:
+For the protected app, add or update an Allow policy requiring a grant claim:
 
 ```text
 Claim name:
@@ -144,7 +129,7 @@ Claim value:
 photos
 ```
 
-The claim value must match the site entry in `/data/config.json`.
+The claim value must be included in the grants for at least one password in `/data/config.json`.
 
 ## 6. Session Duration
 
@@ -157,13 +142,13 @@ This app issues short-lived OIDC tokens. Cloudflare controls how long the user s
 Check Fly logs:
 
 ```bash
-flyctl logs --app cloudflare-otp-for-sites
+flyctl logs --app cloudflare-password-oidc-integration
 ```
 
 Common issues:
 
-- `unknown_site`: the Auth URL site does not match a site id in `/data/config.json`.
 - `unknown_client`: Cloudflare Client ID does not match `clients[].id`.
 - `invalid_client_credentials`: Cloudflare Client Secret does not match `clients[].secret`.
 - `invalid_redirect_uri`: Cloudflare callback is missing from `redirectUris`.
-- User reaches the wrong site page: verify the Auth URL contains the expected `?site=photos` value.
+- `incorrect_password`: the submitted password is not present in `/data/config.json`.
+- Access denied after login: the password's grants do not include the grant required by the Access policy.

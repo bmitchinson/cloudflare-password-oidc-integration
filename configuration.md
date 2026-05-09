@@ -6,7 +6,7 @@ This app has one runtime configuration file:
 /data/config.json
 ```
 
-On Fly.io, `/data` is the mounted persistent volume. That means changes to `/data/config.json` survive deploys, machine restarts, and image rebuilds. Put client secrets and site passwords directly in `/data/config.json`.
+On Fly.io, `/data` is the mounted persistent volume. That means changes to `/data/config.json` survive deploys, machine restarts, and image rebuilds. Put client secrets and shared passwords directly in `/data/config.json`.
 
 The app does not copy a config file into the volume. Create `/data/config.json` yourself from the example file before relying on the deployment.
 
@@ -45,12 +45,12 @@ data-examples/oidc-private-key.example.pem
 Edit what is inside the volume by SSHing into the Fly app.
 
 ```bash
-flyctl ssh console --app cloudflare-otp-for-sites
+flyctl ssh console --app cloudflare-password-oidc-integration
 cd /data
 cp config.json config.json.bak
 vi config.json
 exit
-flyctl machine restart 148e0e32fe2908 --app cloudflare-otp-for-sites
+flyctl machine restart 148e0e32fe2908 --app cloudflare-password-oidc-integration
 ```
 
 The app reads config at startup, so restart the machine after editing.
@@ -58,76 +58,46 @@ The app reads config at startup, so restart the machine after editing.
 To create the first config file from your local example:
 
 ```bash
-flyctl ssh console --app cloudflare-otp-for-sites -C 'sh -lc "mkdir -p /data && cat > /data/config.json"' < data-examples/config.example.json
-flyctl ssh console --app cloudflare-otp-for-sites
+flyctl ssh console --app cloudflare-password-oidc-integration -C 'sh -lc "mkdir -p /data && cat > /data/config.json"' < data-examples/config.example.json
+flyctl ssh console --app cloudflare-password-oidc-integration
 vi /data/config.json
 exit
-flyctl machine restart 148e0e32fe2908 --app cloudflare-otp-for-sites
+flyctl machine restart 148e0e32fe2908 --app cloudflare-password-oidc-integration
 ```
 
 To see the current machine ID:
 
 ```bash
-flyctl status --app cloudflare-otp-for-sites
+flyctl status --app cloudflare-password-oidc-integration
 ```
 
 ## Config Shape
 
-Example:
+Example: data-examples/config.example.json
+
+## Password Grants
+
+Passwords are configured as a map. Each password maps to the grants it should receive:
 
 ```json
-{
-  "issuer": "https://cloudflare-otp-for-sites.fly.dev",
-  "keyPath": "/data/oidc-private-key.pem",
-  "clients": [
-    {
-      "id": "cloudflare-access-shared-passwords",
-      "secret": "client-secret-from-cloudflare-idp-settings",
-      "redirectUris": [
-        "https://your-team-name.cloudflareaccess.com/cdn-cgi/access/callback"
-      ]
-    }
-  ],
-  "sites": [
-    {
-      "id": "photos",
-      "name": "Photos",
-      "passwords": ["shared-password-for-photos"],
-      "grants": ["photos"]
-    }
-  ]
+"passwords": {
+  "shared-password-for-calendar": ["calendar"],
+  "shared-password-for-admin": ["calendar", "photos", "admin"]
 }
 ```
 
-## Adding A Site
+When a user enters a password, the app finds that password in the map and emits those grants in the OIDC token.
 
-Add a site to `/data/config.json`:
-
-```json
-{
-  "id": "calendar",
-  "name": "Calendar",
-  "passwords": ["shared-password-for-calendar"],
-  "grants": ["calendar"]
-}
-```
-
-Then restart:
+After changing grants or passwords, restart:
 
 ```bash
-flyctl machine restart 148e0e32fe2908 --app cloudflare-otp-for-sites
+flyctl machine restart 148e0e32fe2908 --app cloudflare-password-oidc-integration
 ```
 
 In Cloudflare Access, make the protected app require the OIDC claim:
 
 ```text
 grants contains calendar
-```
-
-The site is selected in Cloudflare's OIDC Auth URL. Prefer:
-
-```text
-https://cloudflare-otp-for-sites.fly.dev/authorize?site=calendar
 ```
 
 ## Rotating A Password

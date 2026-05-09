@@ -1,5 +1,5 @@
 {
-  "name": "cloudflare-otp-for-sites",
+  "name": "cloudflare-password-oidc-integration",
   "module": "index.ts",
   "type": "module",
   "private": true,

@@ -2,20 +2,13 @@ export type AppConfig = {
   issuer: string;
   keyPath: string;
   clients: ClientConfig[];
-  sites: SiteConfig[];
+  passwords: Record<string, string[]>;
 };
 
 export type ClientConfig = {
   id: string;
   secret?: string;
   redirectUris: string[];
-};
-
-export type SiteConfig = {
-  id: string;
-  name: string;
-  passwords: string[];
-  grants: string[];
 };
 
 export type OidcJwk = {
@@ -34,7 +27,6 @@ export type AuthorizeRequest = {
   scope: string;
   state: string | null;
   nonce: string | null;
-  siteId: string;
 };
 
 export type PendingLogin = {
@@ -47,6 +39,7 @@ export type AuthCode = {
   subject: string;
   email: string;
   grants: string[];
+  credentialId: string;
   issuedAt: number;
   expiresAt: number;
 };

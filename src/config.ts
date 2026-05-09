@@ -27,9 +27,19 @@ function assertConfig(value: AppConfig) {
     }
   }
 
-  for (const site of value.sites) {
-    if (!site.id || !site.name || !site.passwords.length || !site.grants.length) {
-      throw new Error("Every site requires id, name, at least one password, and at least one grant");
+  if (!value.passwords || Object.keys(value.passwords).length === 0) {
+    throw new Error("config.passwords must contain at least one password entry");
+  }
+
+  for (const [password, grants] of Object.entries(value.passwords)) {
+    if (!password || !Array.isArray(grants) || grants.length === 0) {
+      throw new Error("Every config.passwords entry requires a non-empty password and at least one grant");
+    }
+
+    for (const grant of grants) {
+      if (!grant) {
+        throw new Error("Password grants must be non-empty strings");
+      }
     }
   }
 }
