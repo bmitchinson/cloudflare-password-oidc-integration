@@ -1,6 +1,7 @@
 import { loadConfig } from "./src/config";
 import { createLogger } from "./src/logger";
 import { createOidcServer } from "./src/oidc";
+import { setupPage } from "./src/pages";
 import { htmlResponse, jsonResponse, textResponse } from "./src/responses";
 import { loadOrCreateSigningKey } from "./src/signing";
 
@@ -50,33 +51,11 @@ function setupFetch(error: string) {
     }
 
     if (request.method === "GET" && url.pathname === "/") {
-      return htmlResponse(`<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>OIDC provider setup required</title>
-</head>
-<body>
-  <h1>Setup required</h1>
-  <p>The app is running, but it could not load its config.</p>
-  <p>Config path: <code>${escapeHtml(configPath)}</code></p>
-  <p>Error: <code>${escapeHtml(error)}</code></p>
-</body>
-</html>`, 503);
+      return htmlResponse(setupPage(configPath, error), 503);
     }
 
     return textResponse(`Setup required. Create a valid config at ${configPath}. Error: ${error}`, 503);
   };
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
 }
 
 main().catch((error) => {
