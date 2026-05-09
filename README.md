@@ -66,40 +66,7 @@ Current deployment:
 - config path: `/data/config.json`
 - signing key path: `/data/oidc-private-key.pem`
 
-To launch the same shape from scratch:
-
-```bash
-flyctl launch \
-  --name cloudflare-password-oidc-integration \
-  --region sjc \
-  --primary-region sjc \
-  --internal-port 3000 \
-  --no-db \
-  --no-object-storage \
-  --no-redis \
-  --no-github-workflow \
-  --ha=false \
-  --no-deploy
-
-flyctl volumes create oidc_data \
-  --app cloudflare-password-oidc-integration \
-  --region sjc \
-  --size 1 \
-  --yes
-```
-
-Then make sure `fly.toml` contains:
-
-```toml
-[env]
-  CONFIG_PATH = '/data/config.json'
-
-[mounts]
-  source = 'oidc_data'
-  destination = '/data'
-```
-
-Deploy updates:
+## Deploy updates:
 
 ```bash
 flyctl deploy --app cloudflare-password-oidc-integration
@@ -118,17 +85,6 @@ Example password grants in `config.json`:
 }
 ```
 
-To edit config on the Fly volume:
-
-```bash
-flyctl ssh console --app cloudflare-password-oidc-integration
-cd /data
-cp config.json config.json.bak
-vi config.json
-exit
-flyctl machine restart 148e0e32fe2908 --app cloudflare-password-oidc-integration
-```
-
 The app reads config on startup, so restart the machine after editing `/data/config.json`.
 
 To add or change password grants without rebuilding:
@@ -139,25 +95,6 @@ To add or change password grants without rebuilding:
 4. Restart the Fly machine.
 
 To rotate a password without rebuilding, change the value in `/data/config.json` and restart the Fly machine. Existing Cloudflare Access sessions can remain valid until their Access session expires unless you revoke them in Cloudflare.
-
-## Volume notes
-
-Fly volumes are sized in whole GB through `flyctl`; `--size` is an integer number of gigabytes and defaults to `1`. The current volume is already at the practical minimum size exposed by the CLI.
-
-The Fly volume stores:
-
-- `/data/config.json`: editable runtime config
-- `/data/oidc-private-key.pem`: OIDC signing key
-
-The signing key signs ID tokens and backs `/jwks.json`.
-
-Useful commands:
-
-```bash
-flyctl volumes list --app cloudflare-password-oidc-integration
-flyctl ssh console --app cloudflare-password-oidc-integration
-ls -la /data
-```
 
 ## Endpoints
 
