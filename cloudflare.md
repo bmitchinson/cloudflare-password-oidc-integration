@@ -28,21 +28,6 @@ Use one shared OIDC client:
 }
 ```
 
-Add passwords with the grants they receive:
-
-```json
-"passwords": {
-  "shared-password-users-enter": ["photos"],
-  "admin-password-users-enter": ["photos", "files", "admin"]
-}
-```
-
-Restart after editing:
-
-```bash
-flyctl machine restart 148e0e32fe2908 --app cloudflare-password-oidc-integration
-```
-
 ## 2. Add The OIDC Provider
 
 In Cloudflare Zero Trust:
@@ -136,19 +121,3 @@ The claim value must be included in the grants for at least one password in `/da
 Set the Access application or policy session duration to one month.
 
 This app issues short-lived OIDC tokens. Cloudflare controls how long the user stays logged in to the protected site.
-
-## 7. Troubleshooting
-
-Check Fly logs:
-
-```bash
-flyctl logs --app cloudflare-password-oidc-integration
-```
-
-Common issues:
-
-- `unknown_client`: Cloudflare Client ID does not match `clients[].id`.
-- `invalid_client_credentials`: Cloudflare Client Secret does not match `clients[].secret`.
-- `invalid_redirect_uri`: Cloudflare callback is missing from `redirectUris`.
-- `incorrect_password`: the submitted password is not present in `/data/config.json`.
-- Access denied after login: the password's grants do not include the grant required by the Access policy.

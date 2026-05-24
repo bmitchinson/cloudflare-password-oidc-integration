@@ -42,17 +42,6 @@ data-examples/oidc-private-key.example.pem
 
 ## How To Edit Volume Config
 
-Edit what is inside the volume by SSHing into the Fly app.
-
-```bash
-flyctl ssh console --app cloudflare-password-oidc-integration
-cd /data
-cp config.json config.json.bak
-vi config.json
-exit
-flyctl machine restart 148e0e32fe2908 --app cloudflare-password-oidc-integration
-```
-
 The app reads config at startup, so restart the machine after editing.
 
 To create the first config file from your local example:
