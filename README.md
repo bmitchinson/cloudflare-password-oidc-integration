@@ -2,9 +2,9 @@
 
 A tiny Bun OpenID Connect provider for Cloudflare Access. A user enters a shared password, and that password maps to one or more grants Cloudflare can use in Access policies.
 
-This is intentionally boring HTML. There is no CSS yet.
+See [flyio.setup.md](./flyio.setup.md) for the plain-language guide to editing passwords and volume-backed config.
 
-See [configuration.md](./configuration.md) for the plain-language guide to editing passwords and volume-backed config.
+![](login.png)
 
 ## Run locally
 
